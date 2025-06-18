@@ -1,5 +1,7 @@
 package settings
 
+import "filebrowser/database/users"
+
 type AllowedMethods string
 
 const (
@@ -73,4 +75,48 @@ type IndexFilter struct {
 	Files        []string `json:"files"`        // array of file names to include/exclude
 	Folders      []string `json:"folders"`      // array of folder names to include/exclude
 	FileEndsWith []string `json:"fileEndsWith"` // array of file names to include/exclude (eg "a.jpg")
+}
+type Frontend struct {
+	Name                  string         `json:"name"`                  // display name
+	DisableDefaultLinks   bool           `json:"disableDefaultLinks"`   // disable default links in the sidebar
+	DisableUsedPercentage bool           `json:"disableUsedPercentage"` // disable used percentage for the sources in the sidebar
+	ExternalLinks         []ExternalLink `json:"externalLinks"`
+}
+type ExternalLink struct {
+	Text  string `json:"text" validate:"required"` // the text to display on the link
+	Title string `json:"title"`                    // the title to display on hover
+	Url   string `json:"url" validate:"required"`  // the url to link to
+}
+type UserDefaults struct {
+	StickySidebar              bool                `json:"stickySidebar"`             // keep sidebar open when navigating
+	DarkMode                   bool                `json:"darkMode"`                  // should dark mode be enabled
+	Locale                     string              `json:"locale"`                    // language to use: eg. de, en, or fr
+	ViewMode                   string              `json:"viewMode"`                  // view mode to use: eg. normal, list, grid, or compact
+	SingleClick                bool                `json:"singleClick"`               // open directory on single click, also enables middle click to open in new tab
+	ShowHidden                 bool                `json:"showHidden"`                // show hidden files in the UI. On windows this includes files starting with a dot and windows hidden files
+	DateFormat                 bool                `json:"dateFormat"`                // when false, the date is relative, when true, the date is an exact timestamp
+	GallerySize                int                 `json:"gallerySize"`               // 0-9 - the size of the gallery thumbnails
+	ThemeColor                 string              `json:"themeColor"`                // theme color to use: eg. #ff0000, or var(--red), var(--purple), etc
+	QuickDownload              bool                `json:"quickDownload"`             // show icon to download in one click
+	DisableOnlyOfficeExt       string              `json:"disableOnlyOfficeExt"`      // comma separated list of file extensions to disable onlyoffice preview for
+	DisableOfficePreviewExt    string              `json:"disableOfficePreviewExt"`   // comma separated list of file extensions to disable office preview for
+	LockPassword               bool                `json:"lockPassword"`              // disable the user from changing their password
+	DisableSettings            bool                `json:"disableSettings,omitempty"` // disable the user from viewing the settings page
+	Preview                    users.Preview       `json:"preview"`
+	DefaultScopes              []users.SourceScope `json:"-"`
+	Permissions                users.Permissions   `json:"permissions"`
+	LoginMethod                string              `json:"loginMethod,omitempty"`      // login method to use: eg. password, proxy, oidc
+	DisableUpdateNotifications bool                `json:"disableUpdateNotifications"` // disable update notifications banner for admin users
+}
+type Integrations struct {
+	OnlyOffice OnlyOffice `json:"office" validate:"omitempty"`
+	Media      Media      `json:"media" validate:"omitempty"`
+}
+type OnlyOffice struct {
+	Url         string `json:"url" validate:"required"` // The URL to the OnlyOffice Document Server, needs to be accessible to the user.
+	InternalUrl string `json:"internalUrl"`             // An optional internal address that the filebrowser server can use to communicate with the OnlyOffice Document Server, could be useful to bypass proxy.
+	Secret      string `json:"secret" validate:"required"`
+}
+type Media struct {
+	FfmpegPath string `json:"ffmpegPath"` // path to ffmpeg directory with ffmpeg and ffprobe (eg. /usr/local/bin)
 }
