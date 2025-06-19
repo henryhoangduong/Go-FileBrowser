@@ -1,6 +1,8 @@
 package users
 
 import (
+	"sync"
+
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
@@ -84,4 +86,9 @@ type Preview struct {
 	MotionVideoPreview bool `json:"motionVideoPreview"` // show multiple frames for videos in preview when hovering
 	Office             bool `json:"office"`             // show preview image for office files
 	PopUp              bool `json:"popup"`              // show larger popup preview when hovering
+}
+type Storage struct {
+	back    StorageBackend
+	updated map[uint]int64
+	mux     sync.RWMutex
 }
