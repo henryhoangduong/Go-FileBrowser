@@ -2,9 +2,9 @@ package auth
 
 import (
 	"encoding/base64"
+	"filebrowser/common/settings"
+	"filebrowser/database/users"
 
-	"github.com/gtsteffaniak/filebrowser/backend/common/settings"
-	"github.com/gtsteffaniak/filebrowser/backend/database/users"
 	"github.com/gtsteffaniak/go-logger/logger"
 )
 
