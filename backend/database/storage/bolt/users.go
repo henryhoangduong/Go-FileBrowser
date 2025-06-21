@@ -1,6 +1,8 @@
 package bolt
 
 import (
+	"filebrowser/adapters/fs/files"
+	"filebrowser/auth"
 	"filebrowser/common/errors"
 	"filebrowser/common/settings"
 	"filebrowser/database/users"
@@ -142,6 +144,51 @@ func (st usersBackend) Update(user *users.User, actorIsAdmin bool, fields ...str
 		}
 	}
 	return nil
+}
+func (st usersBackend) Save(user *users.User, changePass, disableScopeChange bool) error {
+	if user.LoginMethod == "" {
+		user.LoginMethod = users.LoginMethodPassword
+	}
+	logger.Debugf("Saving user [%s] changepass: %v", user.Username, changePass)
+	if user.LoginMethod == users.LoginMethodPassword && changePass {
+		err := checkPassword(user.Password)
+		if err != nil {
+			return err
+		}
+		pass, err := users.HashPwd(user.Password)
+		if err != nil {
+			return err
+		}
+		user.Password = pass
+	}
+
+	// converting scopes to map of paths intead of names (names can change)
+	adjustedScopes, err := settings.ConvertToBackendScopes(user.Scopes)
+	if err != nil {
+		return err
+	}
+	user.Scopes = adjustedScopes
+	err = files.MakeUserDirs(user, disableScopeChange)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	err = st.db.Save(user)
+	if err == storm.ErrAlreadyExists {
+		return fmt.Errorf("user with provided username already exists")
+	}
+	return err
+}
+func (st usersBackend) DeleteByID(id uint) error {
+	return st.db.DeleteStruct(&users.User{ID: id})
+}
+
+func (st usersBackend) DeleteByUsername(username string) error {
+	user, err := st.GetBy(username)
+	if err != nil {
+		return err
+	}
+
+	return st.db.DeleteStruct(user)
 }
 func checkPassword(password string) error {
 	if len(password) < settings.Config.Auth.Methods.PasswordAuth.MinLength {

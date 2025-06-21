@@ -1,5 +1,7 @@
 package users
 
+import "time"
+
 type StorageBackend interface {
 	GetBy(interface{}) (*User, error)
 	Gets() ([]*User, error)
@@ -38,4 +40,15 @@ func (s *Storage) Gets() ([]*User, error) {
 		return nil, err
 	}
 	return users, err
+}
+func (s *Storage) Update(user *User, adminIActor bool, fields ...string) error {
+	err := s.back.Update(user, adminIActor, fields...)
+	if err != nil {
+		return err
+	}
+
+	s.mux.Lock()
+	s.updated[user.ID] = time.Now().Unix()
+	s.mux.Unlock()
+	return nil
 }
