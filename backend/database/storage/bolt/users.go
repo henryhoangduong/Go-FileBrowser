@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/asdine/storm/v3"
+	"github.com/gtsteffaniak/go-logger/logger"
 )
 
 type usersBackend struct {
@@ -165,4 +167,53 @@ func getNonAdminEditableFieldNames() []string {
 		names = append(names, t.Field(i).Name)
 	}
 	return names
+}
+
+func parseFields(user *users.User, fields []string, actorIsAdmin bool) ([]string, error) {
+	if len(fields) == 0 || fields[0] == "all" {
+		fields = []string{}
+		v := reflect.ValueOf(user)
+		if v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+		t := v.Type()
+
+		// Dynamically populate fields to update
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			// which=all can't update password
+			switch strings.ToLower(field.Name) {
+			case "id", "username", "loginmethod", "password", "apikeys", "totpenabled", "totpsecret", "totpnonce":
+				// Skip these fields
+				continue
+			}
+			fields = append(fields, field.Name)
+		}
+	}
+	newfields := []string{}
+	for _, field := range fields {
+		capitalField := utils.CapitalizeFirst(field)
+		if capitalField == "Scopes" {
+			if !actorIsAdmin {
+				continue
+			}
+		}
+		if capitalField == "Password" {
+			if user.LoginMethod != users.LoginMethodPassword {
+				return nil, fmt.Errorf("password cannot be changed when login method is not password")
+			}
+			err := checkPassword(user.Password)
+			if err != nil {
+				return nil, fmt.Errorf("password does not meet complexity requirements")
+			}
+			value, err := users.HashPwd(user.Password)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+			user.Password = value
+		}
+		newfields = append(newfields, capitalField)
+	}
+
+	return newfields, nil
 }

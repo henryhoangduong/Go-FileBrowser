@@ -293,3 +293,52 @@ func setupFrontend() {
 		})
 	}
 }
+
+func ConvertToBackendScopes(scopes []users.SourceScope) ([]users.SourceScope, error) {
+	if len(scopes) == 0 {
+		return Config.UserDefaults.DefaultScopes, nil
+	}
+	newScopes := []users.SourceScope{}
+	for _, scope := range scopes {
+
+		// first check if its already a path name and keep it
+		source, ok := Config.Server.SourceMap[scope.Name]
+		if ok {
+			if scope.Scope == "" {
+				scope.Scope = source.Config.DefaultUserScope
+			}
+			if !strings.HasPrefix(scope.Scope, "/") {
+				scope.Scope = "/" + scope.Scope
+			}
+			if scope.Scope != "/" && strings.HasSuffix(scope.Scope, "/") {
+				scope.Scope = strings.TrimSuffix(scope.Scope, "/")
+			}
+			newScopes = append(newScopes, users.SourceScope{
+				Name:  source.Path, // backend name is path
+				Scope: scope.Scope,
+			})
+			continue
+		}
+
+		// check if its the name of a source and convert it to a path
+		source, ok = Config.Server.NameToSource[scope.Name]
+		if !ok {
+			// source might no longer be configured
+			continue
+		}
+		if scope.Scope == "" {
+			scope.Scope = source.Config.DefaultUserScope
+		}
+		if !strings.HasPrefix(scope.Scope, "/") {
+			scope.Scope = "/" + scope.Scope
+		}
+		if scope.Scope != "/" && strings.HasSuffix(scope.Scope, "/") {
+			scope.Scope = strings.TrimSuffix(scope.Scope, "/")
+		}
+		newScopes = append(newScopes, users.SourceScope{
+			Name:  source.Path, // backend name is path
+			Scope: scope.Scope,
+		})
+	}
+	return newScopes, nil
+}
