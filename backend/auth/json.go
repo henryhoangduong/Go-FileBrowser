@@ -110,3 +110,6 @@ func (r *ReCaptcha) Ok(response string) (bool, error) {
 
 	return data.Success, nil
 }
+func (a JSONAuth) LoginPage() bool {
+	return true
+}
