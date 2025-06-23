@@ -4,6 +4,7 @@ import (
 	"filebrowser/auth"
 	"filebrowser/common/settings"
 	"filebrowser/database/share"
+	"filebrowser/database/storage/bolt"
 	"filebrowser/database/users"
 	"os"
 	"path/filepath"

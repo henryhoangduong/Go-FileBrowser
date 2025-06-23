@@ -1,6 +1,9 @@
 package users
 
-import "time"
+import (
+	"filebrowser/common/errors"
+	"time"
+)
 
 type StorageBackend interface {
 	GetBy(interface{}) (*User, error)
@@ -51,4 +54,73 @@ func (s *Storage) Update(user *User, adminIActor bool, fields ...string) error {
 	s.updated[user.ID] = time.Now().Unix()
 	s.mux.Unlock()
 	return nil
+}
+func (s *Storage) AddApiKey(userID uint, name string, key AuthToken) error {
+	user, err := s.Get(userID)
+	if err != nil {
+		return err
+	}
+	// Initialize the ApiKeys map if it is nil
+	if user.ApiKeys == nil {
+		user.ApiKeys = make(map[string]AuthToken)
+	}
+	user.ApiKeys[name] = key
+	err = s.Update(user, true, "ApiKeys")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (s *Storage) DeleteApiKey(userID uint, name string) error {
+	user, err := s.Get(userID)
+	if err != nil {
+		return err
+	}
+	// Initialize the ApiKeys map if it is nil
+	if user.ApiKeys == nil {
+		user.ApiKeys = make(map[string]AuthToken)
+	}
+	delete(user.ApiKeys, name)
+	err = s.Update(user, true, "ApiKeys")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (s *Storage) Save(user *User, changePass, disableScopeChange bool) error {
+	return s.back.Save(user, changePass, disableScopeChange)
+}
+
+// Delete allows you to delete a user by its name or username. The provided
+// id must be a string for username lookup or a uint for id lookup. If id
+// is neither, a ErrInvalidDataType will be returned.
+func (s *Storage) Delete(id interface{}) error {
+	switch id := id.(type) {
+	case string:
+		user, err := s.back.GetBy(id)
+		if err != nil {
+			return err
+		}
+		if user.ID == 1 {
+			return errors.ErrRootUserDeletion
+		}
+		return s.back.DeleteByUsername(id)
+	case uint:
+		if id == 1 {
+			return errors.ErrRootUserDeletion
+		}
+		return s.back.DeleteByID(id)
+	default:
+		return errors.ErrInvalidDataType
+	}
+}
+func (s *Storage) LastUpdate(id uint) int64 {
+	s.mux.RLock()
+	defer s.mux.RUnlock()
+	if val, ok := s.updated[id]; ok {
+		return val
+	}
+	return 0
 }

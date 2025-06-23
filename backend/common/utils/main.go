@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"filebrowser/indexing/iteminfo"
 	"fmt"
 	"os"
@@ -46,4 +48,14 @@ func GetParentDirectoryPath(path string) string {
 		return "/" // If the last slash is the first character, return root
 	}
 	return path[:lastSlash]
+}
+func HashSHA256(data string) string {
+	bytes := sha256.Sum256([]byte(data))
+	return hex.EncodeToString(bytes[:])
+}
+func CapitalizeFirst(s string) string {
+	if len(s) == 0 {
+		return s // Return the empty string as is
+	}
+	return strings.ToUpper(string(s[0])) + s[1:]
 }

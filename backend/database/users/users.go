@@ -1,6 +1,7 @@
 package users
 
 import (
+	"strings"
 	"sync"
 
 	jwt "github.com/golang-jwt/jwt/v4"
@@ -91,4 +92,11 @@ type Storage struct {
 	back    StorageBackend
 	updated map[uint]int64
 	mux     sync.RWMutex
+}
+
+func CleanUsername(s string) string {
+	// Remove any trailing space to avoid ending on -
+	s = strings.Trim(s, " ")
+	s = strings.Replace(s, "..", "", -1)
+	return s
 }
